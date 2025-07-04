@@ -1,4 +1,5 @@
-body {
+body 
+{
     margin: 0;
     font-family: Arial, sans-serif;
     display: flex;
@@ -8,12 +9,12 @@ body {
     background-color: #f0f0f0;
     flex-direction: column;
 }
-
-#container {
+#container 
+{
     text-align: center;
 }
-
-#throwButton {
+#throwButton 
+{
     padding: 10px 20px;
     font-size: 18px;
     background-color: #4CAF50;
@@ -23,18 +24,18 @@ body {
     cursor: pointer;
     margin: 20px;
 }
-
-#throwButton:hover {
+#throwButton:hover 
+{
     background-color: #45a049;
 }
-
-#result {
+#result 
+{
     font-size: 24px;
     margin: 20px;
     font-weight: bold;
 }
-
-canvas {
+canvas 
+{
     display: block;
     margin: 0 auto;
     border: 1px solid #ccc;
