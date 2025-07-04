@@ -3,15 +3,394 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fullscreen 3D Dice</title>
-    <link rel="stylesheet" href="style.css">
+    <title>3D Dice Roller</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #000;
+            font-family: 'Montserrat', sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            position: relative;
+        }
+        
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        
+        #ui-container {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            padding: 20px;
+            width: 100%;
+            max-width: 600px;
+        }
+        
+        #result {
+            font-size: 25vw;
+            font-weight: 900;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.8);
+            margin-bottom: 20px;
+            opacity: 0;
+            transition: opacity 0.8s ease-out;
+            line-height: 0.8;
+            color: #fff;
+            height: 30vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #throwButton {
+            background: linear-gradient(45deg, #ff416c, #ff4b2b);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 18px 60px;
+            font-size: 24px;
+            font-weight: 700;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(255, 75, 43, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+            z-index: 2;
+        }
+        
+        #throwButton:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(255, 75, 43, 0.6);
+        }
+        
+        #throwButton:active {
+            transform: translateY(1px);
+        }
+        
+        #throwButton:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 5px 15px rgba(255, 75, 43, 0.3);
+        }
+        
+        #throwButton::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #ff4b2b, #ff416c);
+            z-index: -1;
+            transition: transform 0.5s ease;
+        }
+        
+        #throwButton:hover::after {
+            transform: scale(1.1);
+        }
+        
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            pointer-events: none;
+            z-index: 5;
+        }
+        
+        #instructions {
+            position: absolute;
+            bottom: 20px;
+            text-align: center;
+            font-size: 14px;
+            opacity: 0.7;
+            z-index: 10;
+        }
+        
+        @media (max-width: 768px) {
+            #result {
+                font-size: 30vw;
+            }
+            
+            #throwButton {
+                padding: 16px 50px;
+                font-size: 20px;
+            }
+        }
+    </style>
 </head>
 <body>
     <div id="ui-container">
-        <div id="result">Click to roll</div>
-        <button id="throwButton">ROLL</button>
+        <div id="result"></div>
+        <button id="throwButton">ROLL DICE</button>
     </div>
-    <script src="script.js"></script>
+    <div id="instructions">Click the button to roll the dice</div>
+
+    <script>
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+
+        // Fullscreen renderer
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        // Create dice
+        const dice = createDice();
+        dice.position.y = 1;
+        scene.add(dice);
+
+        // Position camera
+        camera.position.set(0, 0, 8);
+        camera.lookAt(0, 0, 0);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(3, 5, 5);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+
+        const pointLight = new THREE.PointLight(0xffffff, 0.8);
+        pointLight.position.set(-5, 5, 5);
+        scene.add(pointLight);
+
+        // Create dice with numbered faces
+        function createDice() {
+            const geometry = new THREE.BoxGeometry(3, 3, 3);
+            const materials = [];
+            
+            // Face numbers: right, left, top, bottom, front, back
+            const faceNumbers = [6, 5, 1, 2, 3, 4];
+            
+            for (let i = 0; i < 6; i++) {
+                materials.push(createFaceMaterial(faceNumbers[i]));
+            }
+            
+            const mesh = new THREE.Mesh(geometry, materials);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            return mesh;
+        }
+
+        // Create face material with number
+        function createFaceMaterial(number) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const context = canvas.getContext('2d');
+            
+            // Draw white face
+            context.fillStyle = '#ffffff';
+            context.fillRect(0, 0, 512, 512);
+            
+            // Draw black border
+            context.strokeStyle = '#000000';
+            context.lineWidth = 10;
+            context.strokeRect(5, 5, 502, 502);
+            
+            // Draw number
+            context.fillStyle = '#000000';
+            context.font = 'Bold 300px Arial';
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(number.toString(), 256, 256);
+            
+            const texture = new THREE.Texture(canvas);
+            texture.needsUpdate = true;
+            
+            return new THREE.MeshStandardMaterial({ 
+                map: texture,
+                roughness: 0.3,
+                metalness: 0.2
+            });
+        }
+
+        // Animation variables
+        let isRolling = false;
+        let rollSpeed = 0;
+        let finalNumber = null;
+        let resultDisplayed = false;
+
+        // UI elements
+        const resultElement = document.getElementById('result');
+        const throwButton = document.getElementById('throwButton');
+        const instructions = document.getElementById('instructions');
+
+        // Roll dice function
+        function startRoll() {
+            if (isRolling) return;
+            
+            isRolling = true;
+            rollSpeed = 0.6;
+            finalNumber = null;
+            resultDisplayed = false;
+            resultElement.style.opacity = '0';
+            throwButton.disabled = true;
+            instructions.style.opacity = '0';
+            
+            // Create particles
+            createParticles();
+        }
+
+        // Determine the number facing the camera
+        function getVisibleNumber() {
+            // Get camera direction
+            const cameraDirection = new THREE.Vector3();
+            camera.getWorldDirection(cameraDirection);
+            cameraDirection.normalize();
+            
+            // Face normals and their corresponding numbers
+            const faces = [
+                { normal: new THREE.Vector3(1, 0, 0), number: 6 },   // right
+                { normal: new THREE.Vector3(-1, 0, 0), number: 5 },  // left
+                { normal: new THREE.Vector3(0, 1, 0), number: 1 },   // top
+                { normal: new THREE.Vector3(0, -1, 0), number: 2 },  // bottom
+                { normal: new THREE.Vector3(0, 0, 1), number: 3 },   // front
+                { normal: new THREE.Vector3(0, 0, -1), number: 4 }   // back
+            ];
+            
+            let maxDot = -Infinity;
+            let visibleNumber = 1;
+            
+            // Find face most aligned with camera direction (dot product)
+            faces.forEach(face => {
+                const normal = face.normal.clone().applyMatrix4(dice.matrixWorld).normalize();
+                const dot = normal.dot(cameraDirection);
+                if (dot > maxDot) {
+                    maxDot = dot;
+                    visibleNumber = face.number;
+                }
+            });
+            
+            return visibleNumber;
+        }
+
+        // Create particles effect
+        function createParticles() {
+            const particleCount = 100;
+            const container = document.body;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                
+                // Random size
+                const size = Math.random() * 10 + 5;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                
+                // Random position
+                const x = Math.random() * window.innerWidth;
+                const y = Math.random() * window.innerHeight;
+                particle.style.left = `${x}px`;
+                particle.style.top = `${y}px`;
+                
+                // Random color
+                const colors = ['#ff416c', '#ff4b2b', '#38b6ff', '#6c5ce7', '#00cec9'];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.backgroundColor = color;
+                
+                // Random animation
+                const animationDuration = Math.random() * 1 + 0.5;
+                particle.style.animation = `float ${animationDuration}s ease-out forwards`;
+                
+                container.appendChild(particle);
+                
+                // Remove after animation
+                setTimeout(() => {
+                    particle.remove();
+                }, animationDuration * 1000);
+            }
+            
+            // Add CSS animation
+            const style = document.createElement('style');
+            style.innerHTML = `
+                @keyframes float {
+                    0% {
+                        transform: translate(0, 0) scale(1);
+                        opacity: 1;
+                    }
+                    100% {
+                        transform: translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px) scale(0);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (isRolling) {
+                // Random rotation
+                dice.rotation.x += rollSpeed * (0.2 + Math.random() * 0.8);
+                dice.rotation.y += rollSpeed * (0.2 + Math.random() * 0.8);
+                dice.rotation.z += rollSpeed * (0.2 + Math.random() * 0.8);
+                
+                rollSpeed *= 0.97; // Slow down gradually
+                
+                if (rollSpeed < 0.02) {
+                    // Snap to nearest 90 degrees for a clean stop
+                    dice.rotation.x = Math.round(dice.rotation.x / (Math.PI/2)) * (Math.PI/2);
+                    dice.rotation.y = Math.round(dice.rotation.y / (Math.PI/2)) * (Math.PI/2);
+                    dice.rotation.z = Math.round(dice.rotation.z / (Math.PI/2)) * (Math.PI/2);
+                    
+                    isRolling = false;
+                    finalNumber = getVisibleNumber();
+                    
+                    if (!resultDisplayed) {
+                        resultElement.textContent = finalNumber;
+                        resultElement.style.opacity = '1';
+                        throwButton.disabled = false;
+                        resultDisplayed = true;
+                    }
+                }
+            }
+            
+            renderer.render(scene, camera);
+        }
+
+        // Event listeners
+        throwButton.addEventListener('click', startRoll);
+
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Initial resize
+        window.dispatchEvent(new Event('resize'));
+
+        // Start animation
+        animate();
+    </script>
 </body>
 </html>
