@@ -15,7 +15,7 @@ body
 }
 #throwButton 
 {
-    padding: 10px 20px;
+    padding: 12px 24px;
     font-size: 18px;
     background-color: #4CAF50;
     color: white;
@@ -23,21 +23,29 @@ body
     border-radius: 5px;
     cursor: pointer;
     margin: 20px;
+    transition: background-color 0.3s;
 }
-#throwButton:hover 
+#throwButton:hover
 {
     background-color: #45a049;
+}
+#throwButton:disabled
+{
+    background-color: #cccccc;
+    cursor: not-allowed;
 }
 #result 
 {
     font-size: 24px;
     margin: 20px;
     font-weight: bold;
+    min-height: 36px;
 }
-canvas 
+canvas
 {
     display: block;
-    margin: 0 auto;
+    margin: 20px auto;
     border: 1px solid #ccc;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    background-color: white;
 }
