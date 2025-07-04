@@ -1,20 +1,19 @@
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xf0f0f0);
-const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(400, 400);
-document.body.insertBefore(renderer.domElement, document.getElementById('container').nextSibling);
+scene.background = new THREE.Color(0x000000);
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+document.body.appendChild(renderer.domElement);
 const dice = createDice();
 scene.add(dice);
 camera.position.z = 5;
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+const ambientLight = new THREE.AmbientLight(0x404040);
 scene.add(ambientLight);
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
 directionalLight.position.set(1, 1, 1);
+directionalLight.castShadow = true;
 scene.add(directionalLight);
-let isRolling = false;
-let rollSpeed = 0;
-let finalNumber = null;
 function createDice() 
 {
     const geometry = new THREE.BoxGeometry(2, 2, 2);
@@ -24,73 +23,73 @@ function createDice()
         materials.push(createFaceMaterial(i));
     }
     const mesh = new THREE.Mesh(geometry, materials);
+    mesh.castShadow = true;
     return mesh;
 }
 function createFaceMaterial(number) 
 {
     const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 256;
+    canvas.width = 512;
+    canvas.height = 512;
     const context = canvas.getContext('2d');
     context.fillStyle = '#ffffff';
-    context.fillRect(0, 0, 256, 256);
+    context.fillRect(0, 0, 512, 512);
     context.fillStyle = '#000000';
-    context.font = 'Bold 120px Arial';
+    context.font = 'Bold 300px Arial';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
-    context.fillText(number.toString(), 128, 128);
+    context.fillText(number.toString(), 256, 256);
     const texture = new THREE.Texture(canvas);
     texture.needsUpdate = true;
-    return new THREE.MeshBasicMaterial({ map: texture });
+    return new THREE.MeshStandardMaterial
+    ({ 
+        map: texture,
+        roughness: 0.3,
+        metalness: 0.1
+    });
 }
-document.getElementById('throwButton').addEventListener('click', function() 
-{
-    if (!isRolling) 
-    {
-        startRoll();
-    }
-});
+let isRolling = false;
+let rollSpeed = 0;
+let finalNumber = null;
+let resultDisplayed = false;
+const resultElement = document.getElementById('result');
+const throwButton = document.getElementById('throwButton');
 function startRoll() 
 {
     isRolling = true;
     rollSpeed = 0.5;
     finalNumber = null;
-    document.getElementById('result').textContent = 'Rolling...';
-    document.getElementById('throwButton').disabled = true;
+    resultDisplayed = false;
+    resultElement.style.opacity = '0';
+    throwButton.disabled = true;
 }
-function endRoll() 
+function getVisibleNumber() 
 {
-    isRolling = false;
-    document.getElementById('result').textContent = `You rolled: ${finalNumber}`;
-    document.getElementById('throwButton').disabled = false;
-}
-function getTopFaceNumber() 
-{
-    const up = new THREE.Vector3(0, 1, 0);
-    const matrix = new THREE.Matrix4().extractRotation(dice.matrixWorld);
-    up.applyMatrix4(matrix);
-    const faceNormals = 
+    const cameraDirection = new THREE.Vector3();
+    camera.getWorldDirection(cameraDirection);
+    cameraDirection.normalize();
+    const faces = 
     [
-        new THREE.Vector3(1, 0, 0),
-        new THREE.Vector3(-1, 0, 0),
-        new THREE.Vector3(0, 1, 0),
-        new THREE.Vector3(0, -1, 0),
-        new THREE.Vector3(0, 0, 1),
-        new THREE.Vector3(0, 0, -1)
+        { normal: new THREE.Vector3(1, 0, 0), number: 6 },
+        { normal: new THREE.Vector3(-1, 0, 0), number: 5 },
+        { normal: new THREE.Vector3(0, 1, 0), number: 1 },
+        { normal: new THREE.Vector3(0, -1, 0), number: 2 },
+        { normal: new THREE.Vector3(0, 0, 1), number: 3 },
+        { normal: new THREE.Vector3(0, 0, -1), number: 4 }
     ];
     let maxDot = -Infinity;
-    let topFaceIndex = 2;
-    faceNormals.forEach((normal, index) => 
+    let visibleNumber = 1;
+    faces.forEach(face => 
     {
-        const dot = up.dot(normal);
+        const normal = face.normal.clone().applyMatrix4(dice.matrixWorld).normalize();
+        const dot = normal.dot(cameraDirection);
         if (dot > maxDot) 
         {
             maxDot = dot;
-            topFaceIndex = index;
+            visibleNumber = face.number;
         }
     });
-    const faceNumberMapping = [6, 5, 1, 2, 3, 4];
-    return faceNumberMapping[topFaceIndex];
+    return visibleNumber;
 }
 function animate() 
 {
@@ -106,20 +105,25 @@ function animate()
             dice.rotation.x = Math.round(dice.rotation.x / (Math.PI/2)) * (Math.PI/2);
             dice.rotation.y = Math.round(dice.rotation.y / (Math.PI/2)) * (Math.PI/2);
             dice.rotation.z = Math.round(dice.rotation.z / (Math.PI/2)) * (Math.PI/2);
-            finalNumber = getTopFaceNumber();
-            endRoll();
+            isRolling = false;
+            finalNumber = getVisibleNumber();
+            if (!resultDisplayed) 
+            {
+                resultElement.textContent = finalNumber;
+                resultElement.style.opacity = '1';
+                throwButton.disabled = false;
+                resultDisplayed = true;
+            }
         }
     }
     renderer.render(scene, camera);
 }
+throwButton.addEventListener('click', startRoll);
 window.addEventListener('resize', function() 
 {
-    const container = document.getElementById('container');
-    const width = Math.min(400, window.innerWidth - 40);
-    const height = width;
-    renderer.setSize(width, height);
-    camera.aspect = width / height;
+    camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
 });
 window.dispatchEvent(new Event('resize'));
 animate();
