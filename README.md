@@ -1,5 +1,7 @@
 # 🎲 Dice Roller 3D
 
+![Dice Roller Preview](preview.png)
+
 Welcome to **Dice Roller 3D** – a fun and interactive 3D dice game on the web!  
 Roll one or two dice with realistic physics and beautiful graphics using your keyboard or mouse.
 
