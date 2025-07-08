@@ -39,12 +39,6 @@ No installation needed!
 
 ---
 
-## 📸 Screenshots
-
-> _Add your screenshots here if you have them for better presentation_
-
----
-
 ## 📚 Use Cases
 
 - Learn how physics works in 3D
