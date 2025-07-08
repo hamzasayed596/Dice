@@ -13,7 +13,8 @@
             padding: 0;
             box-sizing: border-box;
         }
-        body {
+        body 
+        {
             background: linear-gradient(135deg, #0a1929, #0c1e34);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             height: 100vh;
@@ -22,7 +23,8 @@
             color: white;
             position: relative;
         }
-        canvas {
+        canvas 
+        {
             position: fixed;
             top: 0;
             left: 0;
@@ -30,7 +32,8 @@
             width: 100%;
             height: 100%;
         }
-        #ui-container {
+        #ui-container
+        {
             position: fixed;
             left: 20px;
             top: 50%;
@@ -49,10 +52,12 @@
             gap: 20px;
             transition: all 0.3s ease;
         }
-        .header {
+        .header 
+        {
             margin-bottom: 15px;
         }
-        .header h1 {
+        .header h1 
+        {
             font-size: 2.5rem;
             margin-bottom: 8px;
             text-shadow: 0 0 20px rgba(100, 200, 255, 0.8);
@@ -63,19 +68,22 @@
             font-weight: 700;
             letter-spacing: 1px;
         }
-        .header p {
+        .header p 
+        {
             font-size: 1.1rem;
             opacity: 0.85;
             color: #a0d2ff;
         }
-        #result-container {
+        #result-container 
+        {
             display: flex;
             justify-content: center;
             gap: 25px;
             margin: 15px 0;
             flex-wrap: wrap;
         }
-        .die-result {
+        .die-result 
+        {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 18px;
             padding: 20px 30px;
@@ -90,7 +98,8 @@
             position: relative;
             overflow: hidden;
         }
-        .die-result:before {
+        .die-result:before 
+        {
             content: '';
             position: absolute;
             top: 0;
@@ -101,7 +110,8 @@
             border-radius: 18px;
             z-index: -1;
         }
-        .die-result:nth-child(1) { 
+        .die-result:nth-child(1) 
+        { 
             background: linear-gradient(135deg, rgba(255, 107, 107, 0.25), rgba(255, 107, 107, 0.1));
             box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
         }
